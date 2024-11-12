@@ -3,6 +3,11 @@
   "displayName": "CursorChat Downloader",
   "description": "Export and view your Cursor AI chat history. Browse through your past conversations, view code snippets, and save chat histories from all your workspaces.",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abakermi/vscode-cursorchat-downloader"
+},
+"publisher": "abdelhakakermi",
   "engines": {
     "vscode": "^1.95.0"
   },

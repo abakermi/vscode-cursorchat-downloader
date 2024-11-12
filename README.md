@@ -1,4 +1,8 @@
+
 # CursorChat History Viewer
+
+
+[![Version](https://img.shields.io/visual-studio-marketplace/v/abdelhakakermi.cursorchat-downloader)](https://marketplace.visualstudio.com/items/abdelhakakermi.cursorchat-downloader/changelog) [![Installs](https://img.shields.io/visual-studio-marketplace/i/abdelhakakermi.cursorchat-downloader)](https://marketplace.visualstudio.com/items?itemName=abdelhakakermi.cursorchat-downloader) [![Downloads](https://img.shields.io/visual-studio-marketplace/d/abdelhakakermi.cursorchat-downloader)](https://marketplace.visualstudio.com/items?itemName=abdelhakakermi.cursorchat-downloader) [![Rating Star](https://img.shields.io/visual-studio-marketplace/stars/abdelhakakermi.cursorchat-downloader)](https://marketplace.visualstudio.com/items?itemName=abdelhakakermi.cursorchat-downloader&ssr=false#review-details) [![Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/abdelhakakermi.cursorchat-downloader)](https://github.com/abakermi/cursorchat-downloader)
 
 View and browse your Cursor AI chat history directly in VS Code. This extension allows you to access all your AI conversations across different workspaces, making it easy to reference past discussions and code solutions.
 

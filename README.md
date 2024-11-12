@@ -1,7 +1,8 @@
 # CursorChat History Viewer
 
 View and browse your Cursor AI chat history directly in VS Code. This extension allows you to access all your AI conversations across different workspaces, making it easy to reference past discussions and code solutions.
-Heavily inspired by [Cursor Chat Browser](https://github.com/thomas-pedersen/cursor-chat-browser) by Thomas Pedersen.
+
+> Heavily inspired by [Cursor Chat Browser](https://github.com/thomas-pedersen/cursor-chat-browser) by Thomas Pedersen.
 
 
 

@@ -17,32 +17,33 @@ export function activate(context: vscode.ExtensionContext) {
 	// The commandId parameter must match the command field in package.json
 	const disposable = vscode.commands.registerCommand('cursorchat-downloader.downloadChatHistory', async () => {
 		try {
-			// Show loading message
-			vscode.window.showInformationMessage('Loading workspace list...');
-
-			// Get workspaces
-			let workspaces = await getWorkspaces();
-			workspaces = workspaces.filter(ws => ws.chatCount > 0);
-
+			const workspaces = await vscode.window.withProgress({
+				location: vscode.ProgressLocation.Notification,
+				title: "Loading workspaces...",
+				cancellable: false,
+			}, async (progress) => {
+				// Get and filter workspaces
+				let workspaces = await getWorkspaces();
+				return workspaces.filter(ws => ws.chatCount > 0);
+			});
+	
 			if (!workspaces || workspaces.length === 0) {
 				vscode.window.showInformationMessage('No workspaces found with chat history.');
 				return;
 			}
-
-			workspaces = workspaces.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
-
-			// Create QuickPick items for workspaces
+	
+			// Sort and display workspaces
+			workspaces.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 			const workspaceItems = workspaces.map(ws => ({
 				label: ws.folder ? path.basename(ws.folder) : ws.id,
 				description: `${ws.chatCount} chats - Last modified: ${new Date(ws.lastModified).toLocaleDateString()}`,
 				workspace: ws
 			}));
-
-			// Show workspace QuickPick
+	
 			const selectedWorkspace = await vscode.window.showQuickPick(workspaceItems, {
 				placeHolder: 'Select a workspace to view chats'
 			});
-
+	
 			if (selectedWorkspace) {
 				await showChatList(selectedWorkspace.workspace);
 			}
@@ -50,76 +51,62 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage('Failed to load workspaces: ' + error);
 		}
 	});
-
+	
 	context.subscriptions.push(disposable);
-}
-
-async function showChatList(workspace: any) {
-	try {
-		await vscode.window.withProgress({
-			location: vscode.ProgressLocation.Notification,
-			title: `Loading chats for ${workspace.folder ? path.basename(workspace.folder) : workspace.id}...`,
-			cancellable: false
-		}, async (progress) => {
-			const db = await open({
-				filename: workspace.path,
-				driver: sqlite3.Database
+	
+	async function showChatList(workspace: any) {
+		try {
+			const chatResult = await vscode.window.withProgress({
+				location: vscode.ProgressLocation.Notification,
+				title: `Loading chats for ${workspace.folder ? path.basename(workspace.folder) : workspace.id}...`,
+				cancellable: false
+			}, async () => {
+				const db = await open({
+					filename: workspace.path,
+					driver: sqlite3.Database
+				});
+	
+				const result = await db.get(`
+					SELECT value FROM ItemTable 
+					WHERE [key] = 'workbench.panel.aichat.view.aichat.chatdata'
+				`);
+	
+				await db.close();
+				return result;
 			});
-
-			// Get chat data
-			const chatResult = await db.get(`
-				SELECT value FROM ItemTable 
-				WHERE [key] = 'workbench.panel.aichat.view.aichat.chatdata'
-			`);
-
-			// Get composer data
-			const composerResult = await db.get(`
-				SELECT value FROM ItemTable 
-				WHERE [key] = 'composer.composerData'
-			`);
-
-			await db.close();
-
-			if (!chatResult && !composerResult) {
+	
+			if (!chatResult) {
 				vscode.window.showInformationMessage('No chat data found for this workspace.');
 				return;
 			}
-
-			const chatData = chatResult ? JSON.parse(chatResult.value) : { tabs: [] };
-			const composerData = composerResult ? JSON.parse(composerResult.value) : undefined;
-			console.log('Chat data:', chatData.tabs[0]);
-
-			// Process chat tabs
+	
+			const chatData = JSON.parse(chatResult.value);
 			const tabs: ChatTab[] = chatData.tabs.map((tab: any) => ({
 				id: tab.tabId,
 				title: tab.chatTitle?.split('\n')[0] || `Chat ${tab.tabId.slice(0, 8)}`,
 				timestamp: safeParseTimestamp(tab.lastSendTime),
 				bubbles: tab.bubbles
 			}));
-
-			// Create QuickPick items for chats
+	
 			const chatItems = tabs.map(tab => ({
 				label: tab.title,
 				description: `Last updated: ${new Date(tab.timestamp).toLocaleString()}`,
 				chat: tab
 			}));
-
-			// Show chat QuickPick
+	
 			const selectedChat = await vscode.window.showQuickPick(chatItems, {
 				placeHolder: 'Select a chat to view',
 				matchOnDescription: true
 			});
-
+	
 			if (selectedChat) {
 				await showChatDetails(selectedChat.chat);
 			}
-		});
-	} catch (error) {
-		vscode.window.showErrorMessage('Failed to load chats: ' + error);
+		} catch (error) {
+			vscode.window.showErrorMessage('Failed to load chats: ' + error);
+		}
 	}
 }
-
-
 
 async function showChatDetails(chat: ChatTab) {
 	try {

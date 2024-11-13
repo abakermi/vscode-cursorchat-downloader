@@ -5,16 +5,12 @@ import path from 'path';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { getWorkspaces } from './utils';
-import {  ChatTab } from "./types";
+import { ChatTab } from "./types";
 import { formatChatContent, safeParseTimestamp } from './utils';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "cursorchat-downloader" is now active!');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -25,11 +21,19 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage('Loading workspace list...');
 
 			// Get workspaces
-			const workspaces = await getWorkspaces();
+			let workspaces = await getWorkspaces();
+			workspaces = workspaces.filter(ws => ws.chatCount > 0);
+
+			if (!workspaces || workspaces.length === 0) {
+				vscode.window.showInformationMessage('No workspaces found with chat history.');
+				return;
+			}
+
+			workspaces = workspaces.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 
 			// Create QuickPick items for workspaces
 			const workspaceItems = workspaces.map(ws => ({
-				label: ws.folder || ws.id,
+				label: ws.folder ? path.basename(ws.folder) : ws.id,
 				description: `${ws.chatCount} chats - Last modified: ${new Date(ws.lastModified).toLocaleDateString()}`,
 				workspace: ws
 			}));
@@ -54,7 +58,7 @@ async function showChatList(workspace: any) {
 	try {
 		await vscode.window.withProgress({
 			location: vscode.ProgressLocation.Notification,
-			title: `Loading chats for ${workspace.folder || workspace.id}...`,
+			title: `Loading chats for ${workspace.folder ? path.basename(workspace.folder) : workspace.id}...`,
 			cancellable: false
 		}, async (progress) => {
 			const db = await open({
